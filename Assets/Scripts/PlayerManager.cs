@@ -8,7 +8,8 @@ public class PlayerManager : MonoBehaviour
 {
     public Slider fuelSlider;
     public Slider healthSlider;
-    public TextMeshPro bulletAmountText;
+    public GameObject bulletPrefab;
+    public RectTransform bulletAmountUI;
 
     [HideInInspector]
     public float fuel = 0f;
@@ -19,24 +20,31 @@ public class PlayerManager : MonoBehaviour
 
     private int bullet = 0;
     public int maxBullet = 0;
+    public float bulletSpeed = 0f;
 
     private PlayerController playerController;
+    private Rigidbody2D myRigidbody;
     private Collider2D myCollider;
+    private TextMeshProUGUI bulletCounterText;
 
     // Start is called before the first frame update
     void Awake()
     {
+        bullet = maxBullet;
         fuel = maxFuel;
         health = maxHealth;
         InitSliders(fuel, health);
 
         playerController = transform.GetComponent<PlayerController>();
         myCollider = transform.GetComponent<Collider2D>();
+        myRigidbody = transform.GetComponent<Rigidbody2D>();
+        bulletCounterText = bulletAmountUI.GetComponent<TextMeshProUGUI>();
     }
 
     // Update is called once per frame
     void Update()
     {
+        bulletAmountUI.position = new Vector2(transform.position.x , transform.position.y - 0.8f);
         if (Input.GetKey(KeyCode.Space))
         {
             Fire();
@@ -78,19 +86,29 @@ public class PlayerManager : MonoBehaviour
     private void DecreaseBullet(int amount)
     {
         bullet = bullet - amount < 0 ? 0 : bullet - amount;
-        bulletAmountText.text = bullet.ToString() + " Bullet";
+        bulletCounterText.text = bullet.ToString();
     }
 
     private void IncreaseBullet(int amount)
     {
         bullet = bullet + amount > maxBullet ? maxBullet : bullet + amount;
-        bulletAmountText.text = bullet.ToString() + " Bullet";
+        bulletCounterText.text = bullet.ToString();
     }
 
+    float cooldown = 0.2f;
+    float cooldownTimestamp;
     private void Fire()
     {
-        print("Fire");
+        if (Time.time < cooldownTimestamp) return;
+        var bulletInstance = Instantiate(bulletPrefab, new Vector2(transform.position.x, transform.position.y), Quaternion.identity);
+
+        Vector2 bulletVelocity = myRigidbody.transform.up * bulletSpeed;
+        bulletVelocity += myRigidbody.velocity * 1.0f;
+        bulletInstance.GetComponent<Rigidbody2D>().velocity = bulletVelocity;
+
+        Destroy(bulletInstance,3);
         DecreaseBullet(1);
+        cooldownTimestamp = Time.time + cooldown;
     }
     
     private void InitSliders(float fuel ,int health)

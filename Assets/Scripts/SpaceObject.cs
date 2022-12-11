@@ -1,15 +1,36 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
-[CreateAssetMenu(fileName = "New SpaceObject", menuName = "SpaceObject")]
-public class SpawnManagerScriptableObject : ScriptableObject
+public class SpaceObject : MonoBehaviour
 {
-    public string spaceObjectName;
+    public enum Type
+    {
+        Asteroid,
+        HealthPoint,
+        Bullet,
+        Fuel
+    }
 
-    public Sprite spaceObjectSprite;
+    // Start is called before the first frame update
+    void Awake()
+    {
+        var type = new Type();
+        switch (type)
+        {
+            case Type.Asteroid:
+                break;
+            case Type.HealthPoint:
+                break;
+            case Type.Bullet:
+                break;
+            case Type.Fuel:
+                break;
+            default:
+                break;
+        }
 
-    public int damage;
-    public int health;
-    public int score;
+        //transform.GetComponent<Rigidbody2D>().AddForce(transform.parent.up.normalized * Random.Range(20 ,50));
+    }
 }
