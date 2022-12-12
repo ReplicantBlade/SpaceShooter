@@ -54,7 +54,7 @@ public class PlayerController : MonoBehaviour
     {
         if (direction == Vector2.zero.normalized)
         {
-            myRigidbody.velocity -= myRigidbody.velocity / 5f;
+            myRigidbody.velocity -= myRigidbody.velocity / 8f;
         }
         else if (myRigidbody.velocity.magnitude >= maxSpeed)
         {

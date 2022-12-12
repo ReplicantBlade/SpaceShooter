@@ -3,14 +3,12 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
 
 public class PlayerManager : MonoBehaviour
 {
-    public Slider fuelSlider;
-    public Slider healthSlider;
     public GameObject bulletPrefab;
-    public RectTransform bulletAmountUI;
-
+    private int score = 0;
     [HideInInspector]
     public float fuel = 0f;
     public float maxFuel = 0f;
@@ -25,74 +23,74 @@ public class PlayerManager : MonoBehaviour
     private PlayerController playerController;
     private Rigidbody2D myRigidbody;
     private Collider2D myCollider;
-    private TextMeshProUGUI bulletCounterText;
+    private UIManager UIManager;
 
-    // Start is called before the first frame update
-    void Awake()
+    private void Start()
     {
+        playerController = transform.GetComponent<PlayerController>();
+        myCollider = transform.GetComponent<Collider2D>();
+        myRigidbody = transform.GetComponent<Rigidbody2D>();
+        UIManager = GameObject.FindWithTag("UIManager").GetComponent<UIManager>();
         bullet = maxBullet;
         fuel = maxFuel;
         health = maxHealth;
         InitSliders(fuel, health);
-
-        playerController = transform.GetComponent<PlayerController>();
-        myCollider = transform.GetComponent<Collider2D>();
-        myRigidbody = transform.GetComponent<Rigidbody2D>();
-        bulletCounterText = bulletAmountUI.GetComponent<TextMeshProUGUI>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        bulletAmountUI.position = new Vector2(transform.position.x , transform.position.y - 0.8f);
         if (Input.GetKey(KeyCode.Space))
         {
             Fire();
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D collision)
+    public int GetHealth()
     {
-        if (true)
-        {
-            DecreaseHealth(1);
-        }
+        return health;
     }
 
     public void DecreaseFuel(float amount)
     {
         fuel = fuel - amount < 0 ? 0 : fuel - amount;
-        fuelSlider.value = fuel;
+        UIManager.SetFuelSlider(-1, fuel);
     }
 
     public void IncreaseFuel(float amount)
     {
         fuel = fuel + amount > maxFuel ? maxFuel : fuel + amount;
-        fuelSlider.value = fuel;
+        UIManager.SetFuelSlider(-1, fuel);
     }
 
-    private void DecreaseHealth(int amount)
+    public void DecreaseHealth(int amount)
     {
         health = health - amount < 0 ? 0 : health - amount;
-        healthSlider.value = health;
+        UIManager.SetHealthSlider(-1, health);
     }
 
-    private void IncreaseHealth(int amount)
+    public void IncreaseHealth(int amount)
     {
         health = health + amount > maxHealth ? maxHealth : health + amount;
-        healthSlider.value = health;
+        UIManager.SetHealthSlider(-1, health);
     }
 
-    private void DecreaseBullet(int amount)
+    public void DecreaseBullet(int amount)
     {
         bullet = bullet - amount < 0 ? 0 : bullet - amount;
-        bulletCounterText.text = bullet.ToString();
+        UIManager.SetBulletAmount(bullet.ToString());
     }
 
-    private void IncreaseBullet(int amount)
+    public void IncreaseBullet(int amount)
     {
         bullet = bullet + amount > maxBullet ? maxBullet : bullet + amount;
-        bulletCounterText.text = bullet.ToString();
+        UIManager.SetBulletAmount(bullet.ToString());
+    }
+
+    public void IncreaseScore(int amount)
+    {
+        score += amount;
+        UIManager.SetScore(score.ToString());
     }
 
     float cooldown = 0.2f;
@@ -113,9 +111,7 @@ public class PlayerManager : MonoBehaviour
     
     private void InitSliders(float fuel ,int health)
     {
-        fuelSlider.maxValue = fuel;
-        fuelSlider.value = fuel;
-        healthSlider.maxValue = health;
-        healthSlider.value = health;
+        UIManager.SetFuelSlider(fuel, fuel);
+        UIManager.SetHealthSlider(health, health);
     }
 }

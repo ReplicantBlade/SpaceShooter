@@ -4,25 +4,27 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using Random = UnityEngine.Random;
+using System.IO;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
-    [HideInInspector] public enum StateType
+    public enum StateType
     {
         Wave,
+        EndWave,
         Win,
         Lose
     };
+    public StateType state { get; set; } = new StateType();
+    public int totalWaveCount;
+    public float waveDuration;
+    public float waveDifficultyStepUp;
+    public float changeWaveDuration;
+    private float waveDifficulty = 1f;
+    private int currentWaveNumber = 1;
 
-    [HideInInspector] public enum Difficulty
-    {
-        easy,
-        medium,
-        hard
-    }
-
-    public int WaveCount;
-
+    public int maxAsteroidToSpawn;
     public int maxBulletToSpawn;
     public int maxHealthPointsToSpawn;
     public int maxFuelToSpawn;
@@ -36,50 +38,77 @@ public class GameManager : MonoBehaviour
     public List<GameObject> Fuel = new();
 
     private List<string> allSpaceTypes = new List<string>();
+    private UIManager UIManager;
+    private PlayerManager playerManager;
 
-    private void Awake()
-    {
-        DontDestroyOnLoad(this.gameObject);
-    }
-
+    private float waveCooldownTimestamp;
+    private float endWaveCooldownTimestamp;
     void Start()
     {
+        UIManager = GameObject.FindWithTag("UIManager").GetComponent<UIManager>();
         player = GameObject.FindWithTag("Player");
+        playerManager = player.GetComponent<PlayerManager>();
+        waveCooldownTimestamp = Time.time + waveDuration;
+        UIManager.SetTotalWave(totalWaveCount.ToString());
+        ResetStage();
     }
 
     void Update()
     {
-        var state = new StateType();
-
+        if (playerManager.GetHealth() <= 0) { state = StateType.Lose; }
         switch (state)
         {
             case StateType.Wave:
-                SpawnSpaceObjects();
+                if (!IsWaveChanged())
+                {
+                    SpawnSpaceObjects(waveDifficulty);
+                }
+                break;
+            case StateType.EndWave:
+                if (HasGameFinished())
+                {
+                    state = StateType.Win;
+                }
+                if (Time.time > endWaveCooldownTimestamp)
+                {
+                    state = StateType.Wave;
+                    ResetStage();
+                }
                 break;
             case StateType.Win:
+                player.SetActive(false);
+                UIManager.InitialEndGamePanel("Victory");
                 break;
             case StateType.Lose:
+                player.SetActive(false);
+                UIManager.InitialEndGamePanel("Lose");
+
                 break;
             default:
                 break;
         }
     }
 
-    float cooldown = 0.8f;
+    float cooldown = 0f;
     float cooldownTimestamp;
-    private void SpawnSpaceObjects()
+    private void SpawnSpaceObjects(float difficulty)
     {
         if (Time.time < cooldownTimestamp) return;
 
+        float minSpeedOfObject = 1f * difficulty, maxSpeedOfObject = minSpeedOfObject * 2f * difficulty;
+
         Transform spawnLocation = GetRandomSpawnLocation();
         GameObject spaceObject = GetSpaceObjectToSpawn();
+        spaceObject.GetComponent<SpaceObject>().SetPlayer(player.transform);
         var spaceObjectInstance = Instantiate(spaceObject, spawnLocation.transform);
 
-        spaceObjectInstance.GetComponent<Rigidbody2D>().velocity = spawnLocation.transform.up * Random.Range(5f, 30f);
-        Destroy(spaceObjectInstance, 5);
+        spaceObjectInstance.GetComponent<Rigidbody2D>().velocity = spawnLocation.transform.up * Random.Range(minSpeedOfObject, maxSpeedOfObject);
+        Destroy(spaceObjectInstance, 30);
+
+        float minSpawnTimeOfObject = 1f / difficulty, maxSpawnTimeOfObject = minSpawnTimeOfObject * 2f / difficulty;
 
         cooldownTimestamp = Time.time + cooldown;
-        cooldown = Random.Range(0.8f, 3f);
+        cooldown = Random.Range(minSpawnTimeOfObject, maxSpawnTimeOfObject);
     }
 
     private Transform GetRandomSpawnLocation()
@@ -87,47 +116,89 @@ public class GameManager : MonoBehaviour
         return spawnLocations[Random.Range(0, spawnLocations.Count)];
     }
 
+    private int maxAsteroid, maxBullet, maxHealthPoints, maxFuel;
     private GameObject GetSpaceObjectToSpawn()
     {
-        List<GameObject> choosenList = null;
+        if (allSpaceTypes.Count > 0)
+        {
+            List<GameObject> choosenList = null;
+
+            while (choosenList == null)
+            {
+                int index = Random.Range(0, allSpaceTypes.Count);
+                switch (allSpaceTypes[index])
+                {
+                    case "Asteroids":
+                        choosenList = Asteroids;
+                        if (maxAsteroid <= 0) { allSpaceTypes.RemoveAt(index); break; };
+                        maxAsteroid = maxAsteroid-- < 0 ? 0 : maxAsteroid--;
+                        break;
+
+                    case "Bullets":
+                        choosenList = Bullets;
+                        if (maxBullet <= 0) { allSpaceTypes.RemoveAt(index); break; };
+                        maxBullet = maxBullet-- < 0 ? 0 : maxBullet--;
+                        break;
+
+                    case "HealthPoints":
+                        choosenList = HealthPoints;
+                        if (maxHealthPoints <= 0) { allSpaceTypes.RemoveAt(index); break; };
+                        maxHealthPoints = maxHealthPoints-- < 0 ? 0 : maxHealthPoints--;
+                        break;
+
+                    case "Fuel":
+                        choosenList = Fuel;
+                        if (maxFuel <= 0) { allSpaceTypes.RemoveAt(index); break; };
+                        maxFuel = maxFuel-- < 0 ? 0 : maxFuel--;
+                        break;
+
+                    default:
+                        choosenList = null;
+                        break;
+                }
+            }
+
+            return choosenList[Random.Range(0, choosenList.Count)];
+        }
+        //If there was nothing to spawn just finish the wave with one healPoint
+        else { state = StateType.EndWave; return HealthPoints[0]; }
+    }
+
+    private void ResetStage()
+    {
         allSpaceTypes.Add("Asteroids");
         allSpaceTypes.Add("Bullets");
         allSpaceTypes.Add("HealthPoints");
         allSpaceTypes.Add("Fuel");
+        maxAsteroid = maxAsteroidToSpawn - 1;
+        maxBullet = maxBulletToSpawn - 1;
+        maxHealthPoints = maxHealthPointsToSpawn - 1;
+        maxFuel = maxFuelToSpawn - 1;
+    }
 
-        while (choosenList == null)
+    private bool IsWaveChanged()
+    {
+        if (Time.time > waveCooldownTimestamp)
         {
-            int index = Random.Range(0, allSpaceTypes.Count);
-            switch (allSpaceTypes[index])
-            {
-                case "Asteroids":
-                    choosenList = Asteroids;
-                    break;
-
-                case "Bullets":
-                    choosenList = Bullets;
-                    maxBulletToSpawn--;
-                    if (maxBulletToSpawn <= 0) allSpaceTypes.RemoveAt(index);
-                    break;
-
-                case "HealthPoints":
-                    choosenList = HealthPoints;
-                    maxHealthPointsToSpawn--;
-                    if (maxHealthPointsToSpawn <= 0) allSpaceTypes.RemoveAt(index);
-                    break;
-
-                case "Fuel":
-                    choosenList = Fuel;
-                    maxFuelToSpawn--;
-                    if (maxFuelToSpawn <= 0) allSpaceTypes.RemoveAt(index);
-                    break;
-
-                default:
-                    choosenList = null;
-                    break;
-            }
+            IncreaseDifficulty();
+            state = StateType.EndWave;
+            endWaveCooldownTimestamp = Time.time + changeWaveDuration;
+            waveCooldownTimestamp = Time.time + waveDuration + changeWaveDuration;
+            return true;
         }
+        return false;
+    }
 
-        return choosenList[Random.Range(0, choosenList.Count)];
+    private bool HasGameFinished()
+    {
+        return currentWaveNumber > totalWaveCount;
+    }
+
+    private void IncreaseDifficulty()
+    {
+        waveDifficulty += waveDifficultyStepUp;
+        currentWaveNumber++;
+        UIManager.SetCurrentWave(currentWaveNumber.ToString());
+        maxAsteroidToSpawn += 2;
     }
 }

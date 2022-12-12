@@ -7,30 +7,80 @@ public class SpaceObject : MonoBehaviour
 {
     public enum Type
     {
-        Asteroid,
+        AsteroidSmall,
+        AsteroidMedium,
+        AsteroidBig,
         HealthPoint,
         Bullet,
         Fuel
     }
 
+    public Type type = new();
+
+    private int objectScore = 0;
+    private int objectDamage = 0;
+    private int objectHealthPoint = 0;
+    private int objectBulletPoint = 0;
+    private float objectFuelPoint = 0f;
+
+    [HideInInspector] public Transform playerTransform ;
+    [HideInInspector] public PlayerManager playerManager;
+
     // Start is called before the first frame update
     void Awake()
     {
-        var type = new Type();
         switch (type)
         {
-            case Type.Asteroid:
+            case Type.AsteroidSmall:
+                objectScore = 10;
+                objectDamage = 10;
+                break;
+            case Type.AsteroidMedium:
+                objectScore = 30;
+                objectDamage = 20;
+                break;
+            case Type.AsteroidBig:
+                objectScore = 50;
+                objectDamage = 30;
                 break;
             case Type.HealthPoint:
+                objectHealthPoint = 20;
                 break;
             case Type.Bullet:
+                objectBulletPoint = 50;
                 break;
             case Type.Fuel:
+                objectFuelPoint = 30f;
                 break;
             default:
                 break;
         }
+    }
 
-        //transform.GetComponent<Rigidbody2D>().AddForce(transform.parent.up.normalized * Random.Range(20 ,50));
+    public void SetPlayer(Transform PlayerTransform)
+    {
+        playerTransform = PlayerTransform;
+        playerManager = playerTransform.GetComponent<PlayerManager>();
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.transform.tag == "Player")
+        {
+            playerManager.DecreaseHealth(objectDamage);
+            playerManager.IncreaseHealth(objectHealthPoint);
+            playerManager.IncreaseBullet(objectBulletPoint);
+            playerManager.IncreaseFuel(objectFuelPoint);
+            Destroy(gameObject);
+        }
+        else if (collision.transform.tag == "Bullet")
+        {
+            if (type.Equals(Type.AsteroidSmall) || type.Equals(Type.AsteroidMedium) || type.Equals(Type.AsteroidBig))
+            {
+                playerManager.IncreaseScore(objectScore);
+                Destroy(gameObject);
+                Destroy(collision.gameObject);
+            }
+        }
     }
 }
