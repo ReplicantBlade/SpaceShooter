@@ -23,8 +23,8 @@ public class SpaceObject : MonoBehaviour
     private int objectBulletPoint = 0;
     private float objectFuelPoint = 0f;
 
-    [HideInInspector] public Transform playerTransform ;
     [HideInInspector] public PlayerManager playerManager;
+    [HideInInspector] public GameManager gameManager;
 
     // Start is called before the first frame update
     void Awake()
@@ -57,10 +57,14 @@ public class SpaceObject : MonoBehaviour
         }
     }
 
-    public void SetPlayer(Transform PlayerTransform)
+    public void SetPlayerManager(PlayerManager playermanager)
     {
-        playerTransform = PlayerTransform;
-        playerManager = playerTransform.GetComponent<PlayerManager>();
+        playerManager = playermanager;
+    }
+
+    public void SetGameManager(GameManager gamemanager)
+    {
+        gameManager = gamemanager; 
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -71,6 +75,7 @@ public class SpaceObject : MonoBehaviour
             playerManager.IncreaseHealth(objectHealthPoint);
             playerManager.IncreaseBullet(objectBulletPoint);
             playerManager.IncreaseFuel(objectFuelPoint);
+            gameManager.CheckPlayerHealth();
             Destroy(gameObject);
         }
         else if (collision.transform.tag == "Bullet")

@@ -55,34 +55,19 @@ public class GameManager : MonoBehaviour
 
     void Update()
     {
-        if (playerManager.GetHealth() <= 0) { state = StateType.Lose; }
         switch (state)
         {
             case StateType.Wave:
-                if (!IsWaveChanged())
-                {
-                    SpawnSpaceObjects(waveDifficulty);
-                }
+                WaveSpawnState();
                 break;
             case StateType.EndWave:
-                if (HasGameFinished())
-                {
-                    state = StateType.Win;
-                }
-                if (Time.time > endWaveCooldownTimestamp)
-                {
-                    state = StateType.Wave;
-                    ResetStage();
-                }
+                EndWaveState();
                 break;
             case StateType.Win:
-                player.SetActive(false);
-                UIManager.InitialEndGamePanel("Victory");
+                WinGameState();
                 break;
             case StateType.Lose:
-                player.SetActive(false);
-                UIManager.InitialEndGamePanel("Lose");
-
+                LoseGameState();
                 break;
             default:
                 break;
@@ -99,10 +84,12 @@ public class GameManager : MonoBehaviour
 
         Transform spawnLocation = GetRandomSpawnLocation();
         GameObject spaceObject = GetSpaceObjectToSpawn();
-        spaceObject.GetComponent<SpaceObject>().SetPlayer(player.transform);
-        var spaceObjectInstance = Instantiate(spaceObject, spawnLocation.transform);
+        spaceObject.GetComponent<SpaceObject>().SetPlayerManager(playerManager);
+        spaceObject.GetComponent<SpaceObject>().SetGameManager(this);
 
+        var spaceObjectInstance = Instantiate(spaceObject, spawnLocation.transform);
         spaceObjectInstance.GetComponent<Rigidbody2D>().velocity = spawnLocation.transform.up * Random.Range(minSpeedOfObject, maxSpeedOfObject);
+        spaceObjectInstance.GetComponent<Rigidbody2D>().AddTorque(Random.Range(0f,1.5f), ForceMode2D.Impulse);
         Destroy(spaceObjectInstance, 30);
 
         float minSpawnTimeOfObject = 1f / difficulty, maxSpawnTimeOfObject = minSpawnTimeOfObject * 2f / difficulty;
@@ -117,6 +104,7 @@ public class GameManager : MonoBehaviour
     }
 
     private int maxAsteroid, maxBullet, maxHealthPoints, maxFuel;
+    
     private GameObject GetSpaceObjectToSpawn()
     {
         if (allSpaceTypes.Count > 0)
@@ -200,5 +188,43 @@ public class GameManager : MonoBehaviour
         currentWaveNumber++;
         UIManager.SetCurrentWave(currentWaveNumber.ToString());
         maxAsteroidToSpawn += 2;
+    }
+
+    private void WaveSpawnState()
+    {
+        if (!IsWaveChanged())
+        {
+            SpawnSpaceObjects(waveDifficulty);
+        }
+    }
+
+    private void EndWaveState()
+    {
+        if (HasGameFinished())
+        {
+            state = StateType.Win;
+        }
+        if (Time.time > endWaveCooldownTimestamp)
+        {
+            state = StateType.Wave;
+            ResetStage();
+        }
+    }
+
+    private void WinGameState()
+    {
+        player.SetActive(false);
+        UIManager.InitialEndGamePanel("Victory");
+    }
+
+    private void LoseGameState()
+    {
+        player.SetActive(false);
+        UIManager.InitialEndGamePanel("Lose");
+    }
+
+    public void CheckPlayerHealth()
+    {
+        if (playerManager.GetHealth() <= 0) { state = StateType.Lose; }
     }
 }
