@@ -62,7 +62,8 @@ public class UIManager : MonoBehaviour
 
     public void ExitGame()
     {
-        Application.Quit();
+        RestartGame();
+        //Application.Quit();
     }
 
     private void CalculateScore(int score)
