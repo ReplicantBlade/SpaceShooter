@@ -34,7 +34,7 @@ public class PlayerManager : MonoBehaviour
         bullet = maxBullet;
         fuel = maxFuel;
         health = maxHealth;
-        InitSliders(fuel, health);
+        InitUIElements(fuel, health);
     }
 
     // Update is called once per frame
@@ -90,7 +90,11 @@ public class PlayerManager : MonoBehaviour
     public void IncreaseScore(int amount)
     {
         score += amount;
-        UIManager.SetScore(score.ToString());
+    }
+
+    public int GetScore()
+    {
+        return score;
     }
 
     float cooldown = 0.2f;
@@ -109,9 +113,10 @@ public class PlayerManager : MonoBehaviour
         cooldownTimestamp = Time.time + cooldown;
     }
     
-    private void InitSliders(float fuel ,int health)
+    private void InitUIElements(float fuel ,int health)
     {
         UIManager.SetFuelSlider(fuel, fuel);
         UIManager.SetHealthSlider(health, health);
+        UIManager.SetBulletAmount(bullet.ToString());
     }
 }

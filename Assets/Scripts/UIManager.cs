@@ -4,6 +4,8 @@ using TMPro;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using ToolBox.Serialization;
+using UnityEngine.SocialPlatforms.Impl;
 
 public class UIManager : MonoBehaviour
 {
@@ -17,11 +19,12 @@ public class UIManager : MonoBehaviour
     public UnityEngine.UI.Slider fuelSlider;
     public UnityEngine.UI.Slider healthSlider;
     
-
-    public void InitialEndGamePanel(string message)
+    public void InitialEndGamePanel(string message ,int playerScore)
     {
         gameResult.GetComponent<TextMeshProUGUI>().text = message;
         endGamePanel.SetActive(true);
+
+        CalculateScore(playerScore);
     }
 
     public void SetCurrentWave(string txt)
@@ -37,12 +40,6 @@ public class UIManager : MonoBehaviour
     public void SetBulletAmount(string txt)
     {
         bulletAmountUI.GetComponent<TextMeshProUGUI>().text = txt;
-    }
-
-    public void SetScore(string txt)
-    {
-        scoreUI.GetComponent<TextMeshProUGUI>().text = txt;
-        highestScoreUI.GetComponent<TextMeshProUGUI>().text = txt;
     }
 
     public void SetFuelSlider(float max ,float value)
@@ -66,5 +63,20 @@ public class UIManager : MonoBehaviour
     public void ExitGame()
     {
         Application.Quit();
+    }
+
+    private void CalculateScore(int score)
+    {
+        int highestScore = DataSerializer.TryLoad("HighestScore", out int value) ? value : 0;
+
+        if (score > highestScore)
+        {
+            highestScore = score;
+            DataSerializer.Save("HighestScore", score);
+            highestScoreUI.GetComponentInParent<Animator>().enabled = true;
+        }
+
+        scoreUI.GetComponent<TextMeshProUGUI>().text = score.ToString();
+        highestScoreUI.GetComponent<TextMeshProUGUI>().text = highestScore.ToString();
     }
 }

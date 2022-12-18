@@ -43,6 +43,7 @@ public class GameManager : MonoBehaviour
 
     private float waveCooldownTimestamp;
     private float endWaveCooldownTimestamp;
+
     void Start()
     {
         UIManager = GameObject.FindWithTag("UIManager").GetComponent<UIManager>();
@@ -172,6 +173,7 @@ public class GameManager : MonoBehaviour
             state = StateType.EndWave;
             endWaveCooldownTimestamp = Time.time + changeWaveDuration;
             waveCooldownTimestamp = Time.time + waveDuration + changeWaveDuration;
+            playerManager.IncreaseScore(10 * (int)waveDifficulty);
             return true;
         }
         return false;
@@ -214,13 +216,13 @@ public class GameManager : MonoBehaviour
     private void WinGameState()
     {
         player.SetActive(false);
-        UIManager.InitialEndGamePanel("Victory");
+        UIManager.InitialEndGamePanel("Victory" , playerManager.GetScore());
     }
 
     private void LoseGameState()
     {
         player.SetActive(false);
-        UIManager.InitialEndGamePanel("Lose");
+        UIManager.InitialEndGamePanel("Lose", playerManager.GetScore());
     }
 
     public void CheckPlayerHealth()
