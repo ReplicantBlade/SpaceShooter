@@ -97,7 +97,7 @@ public class PlayerManager : MonoBehaviour
     float cooldownTimestamp;
     private void Fire()
     {
-        if (Time.time < cooldownTimestamp) return;
+        if (Time.time < cooldownTimestamp || bullet <= 0) return;
         var bulletInstance = Instantiate(bulletPrefab, new Vector2(transform.position.x, transform.position.y), Quaternion.identity);
 
         Vector2 bulletVelocity = myRigidbody.transform.up * bulletSpeed;
